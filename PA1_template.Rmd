@@ -1,25 +1,93 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_template"
+author: "curious3"
+date: "Friday, May 15, 2015"
+output: html_document
 ---
 
+### Loading and preprocessing the data
 
-## Loading and preprocessing the data
+1. Code needed to load the data
+
+```{r}
+# download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip", destfile = "repdata-data-activity.zip")
+
+# unzip("repdata-data-activity.zip")
+
+data <- read.csv("activity.csv", header = T, comment.char = "")
+```
+
+2. Code needed to transform the data
+
+The date column needs to be transformed to Date class.
+
+```{r}
+data$date <- as.Date(data$date)
+```
 
 
+### What is the mean total number of steps taken in a day?
 
-## What is mean total number of steps taken per day?
+Missing values will be ignored for this part of the analysis.
 
+1. The total number of steps taken in a day is calculated by grouping by the date and calculating the sum of the steps for each group. The dplyr library offers functions to group and summarize.
 
+```{r message = FALSE, warning=FALSE}
+library(dplyr)
 
-## What is the average daily activity pattern?
+steps <- group_by(data, date)
 
+per_day <- summarize(steps, total.steps = sum(steps, na.rm = T))
 
+summary(per_day)
+```
 
-## Imputing missing values
+2. A histogram of the total number of steps taken per day is generated as shown.
 
+```{r}
+library(ggplot2)
 
+qplot(per_day$total.steps, geom = "histogram", xlab = "Total number of steps/day")
+```
 
-## Are there differences in activity patterns between weekdays and weekends?
+3. The mean and median of the total number of steps taken per day are calculated as follows.
+
+```{r}
+mean_steps <- mean(per_day$total.steps, na.rm = T)
+median_steps <- median(per_day$total.steps, na.rm = T)
+```
+
+### What is the average daily activity pattern?
+
+1. A time series plot of the 5-minute interval and the average number of steps
+
+```{r}
+library(ggplot2)
+
+mean_steps_per_interval <- aggregate(data$steps, by = list(data$interval), FUN = mean, na.rm = T)
+
+colnames(mean_steps_per_interval) <- c("interval", "mean.steps")
+
+qplot(data = mean_steps_per_interval, x = interval, y = mean.steps, geom = "line", main = "Average number of steps over 5-min intervals")
+```
+
+2. To find the interval with the maximum activity, we first find the maximum value and then select the interval corresponding to it.
+
+```{r}
+max_val <- max(mean_steps_per_interval$mean.steps, na.rm = T)
+max_interval <- mean_steps_per_interval[which(mean_steps_per_interval$mean.steps == max_val),]$interval
+```
+
+The interval with the maximum number of steps (on average) is `r max_interval`.
+
+### Imputing missing values
+
+1. The number of missing values is computed by using the is.na function.
+
+```{r}
+num_missing <- sum(is.na(data$steps))
+```
+
+The number of missing values is `r num_missing`.
+
+2. 
